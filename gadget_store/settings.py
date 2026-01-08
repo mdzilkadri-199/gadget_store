@@ -3,6 +3,7 @@ Django settings for gadget_store project.
 """
 import os
 from pathlib import Path
+import dj_database_url # type: ignore
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-key-untuk-sementara')
@@ -57,13 +58,16 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'gadget_store.wsgi.application'
 
-# DATABASE SQLite (Paling Aman untuk Vercel awal)
+# DATABASE Konfigurasi untuk Vercel (Neon Postgres)
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        # Mengambil link dari Environment Variable yang dibuat Vercel tadi
+        default=os.environ.get('STORAGE_URL'), 
+        conn_max_age=600,
+        ssl_require=True
+    )
 }
+
 
 AUTH_PASSWORD_VALIDATORS = [{'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'}, {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'}, {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'}, {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'}]
 
