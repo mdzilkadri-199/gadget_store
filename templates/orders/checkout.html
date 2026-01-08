@@ -1,0 +1,489 @@
+<!-- templates/orders/checkout.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Checkout - GadgetStore{% endblock %}
+
+{% block extra_css %}
+<style>
+    .checkout-step {
+        display: flex;
+        align-items: center;
+        margin-bottom: 30px;
+    }
+    .step-number {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #e9ecef;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+        font-weight: bold;
+        color: #6c757d;
+    }
+    .step-number.active {
+        background: #007bff;
+        color: white;
+    }
+    .step-number.completed {
+        background: #28a745;
+        color: white;
+    }
+    .step-info h5 {
+        margin: 0;
+        color: #6c757d;
+    }
+    .step-info.active h5 {
+        color: #007bff;
+    }
+    .step-info.completed h5 {
+        color: #28a745;
+    }
+    .checkout-item {
+        border-bottom: 1px solid #eee;
+        padding: 15px 0;
+    }
+    .checkout-item:last-child {
+        border-bottom: none;
+    }
+    .item-img {
+        width: 70px;
+        height: 70px;
+        object-fit: cover;
+        border-radius: 5px;
+    }
+    .summary-box {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 25px;
+        position: sticky;
+        top: 20px;
+    }
+    .payment-method {
+        border: 2px solid #dee2e6;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 10px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .payment-method:hover {
+        border-color: #007bff;
+        background: #f8f9ff;
+    }
+    .payment-method.selected {
+        border-color: #007bff;
+        background: #f8f9ff;
+    }
+    .payment-icon {
+        font-size: 1.5rem;
+        margin-right: 10px;
+    }
+    .form-control:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.25);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Progress Steps -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="checkout-step">
+                <div class="step-number completed">
+                    <i class="fas fa-shopping-cart"></i>
+                </div>
+                <div class="step-info completed">
+                    <h5>Keranjang</h5>
+                    <small class="text-muted">Review produk</small>
+                </div>
+                
+                <div class="mx-3"><i class="fas fa-chevron-right text-muted"></i></div>
+                
+                <div class="step-number active">
+                    <span>2</span>
+                </div>
+                <div class="step-info active">
+                    <h5>Checkout</h5>
+                    <small class="text-muted">Informasi & pembayaran</small>
+                </div>
+                
+                <div class="mx-3"><i class="fas fa-chevron-right text-muted"></i></div>
+                
+                <div class="step-number">
+                    <span>3</span>
+                </div>
+                <div class="step-info">
+                    <h5>Konfirmasi</h5>
+                    <small class="text-muted">Pesanan diterima</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Column - Order Details -->
+        <div class="col-lg-8">
+            <form method="post" id="checkout-form">
+                {% csrf_token %}
+                
+                <!-- Shipping Information -->
+                <div class="card mb-4">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-shipping-fast me-2 text-primary"></i>
+                            Informasi Pengiriman
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="full_name" class="form-label">Nama Lengkap *</label>
+                                <input type="text" class="form-control" id="full_name" 
+                                       name="full_name" required
+                                       value="{{ user.get_full_name|default:user.username }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="phone" class="form-label">No. Telepon *</label>
+                                <input type="tel" class="form-control" id="phone" 
+                                       name="phone" required
+                                       value="{{ user.phone_number|default:'' }}">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email *</label>
+                            <input type="email" class="form-control" id="email" 
+                                   name="email" required
+                                   value="{{ user.email }}">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="shipping_address" class="form-label">Alamat Pengiriman *</label>
+                            <textarea class="form-control" id="shipping_address" 
+                                      name="shipping_address" rows="4" required
+                                      placeholder="Contoh: Jl. Merdeka No. 123, Kel. Sukajadi, Kec. Sukajadi, Kota Bandung, Jawa Barat 40162">{{ user.address|default:'' }}</textarea>
+                            <small class="text-muted">Pastikan alamat lengkap dan jelas</small>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="city" class="form-label">Kota *</label>
+                                <input type="text" class="form-control" id="city" 
+                                       name="city" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="postal_code" class="form-label">Kode Pos *</label>
+                                <input type="text" class="form-control" id="postal_code" 
+                                       name="postal_code" required>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Catatan (Opsional)</label>
+                            <textarea class="form-control" id="notes" 
+                                      name="notes" rows="3"
+                                      placeholder="Contoh: Tinggal di lantai 3, rumah warna hijau..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Payment Method -->
+                <div class="card mb-4">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-credit-card me-2 text-primary"></i>
+                            Metode Pembayaran
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="payment-method selected" data-method="bank_transfer">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" 
+                                       name="payment_method" id="bank_transfer" 
+                                       value="bank_transfer" checked>
+                                <label class="form-check-label d-flex align-items-center" 
+                                       for="bank_transfer">
+                                    <i class="fas fa-university payment-icon text-primary"></i>
+                                    <div>
+                                        <h6 class="mb-1">Transfer Bank</h6>
+                                        <small class="text-muted">
+                                            Transfer ke rekening BCA, BNI, BRI, Mandiri
+                                        </small>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="payment-method" data-method="ewallet">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" 
+                                       name="payment_method" id="ewallet" 
+                                       value="ewallet">
+                                <label class="form-check-label d-flex align-items-center" 
+                                       for="ewallet">
+                                    <i class="fas fa-wallet payment-icon text-success"></i>
+                                    <div>
+                                        <h6 class="mb-1">E-Wallet</h6>
+                                        <small class="text-muted">
+                                            OVO, GOPAY, DANA, ShopeePay
+                                        </small>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="payment-method" data-method="cod">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" 
+                                       name="payment_method" id="cod" 
+                                       value="cod">
+                                <label class="form-check-label d-flex align-items-center" 
+                                       for="cod">
+                                    <i class="fas fa-money-bill-wave payment-icon text-warning"></i>
+                                    <div>
+                                        <h6 class="mb-1">COD (Cash on Delivery)</h6>
+                                        <small class="text-muted">
+                                            Bayar saat barang sampai (tambahan Rp 5,000)
+                                        </small>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="payment-method" data-method="credit_card">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" 
+                                       name="payment_method" id="credit_card" 
+                                       value="credit_card">
+                                <label class="form-check-label d-flex align-items-center" 
+                                       for="credit_card">
+                                    <i class="fab fa-cc-visa payment-icon text-info"></i>
+                                    <div>
+                                        <h6 class="mb-1">Kartu Kredit</h6>
+                                        <small class="text-muted">
+                                            Visa, MasterCard, JCB
+                                        </small>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Right Column - Order Summary -->
+        <div class="col-lg-4">
+            <div class="summary-box">
+                <h5 class="mb-4">Ringkasan Pesanan</h5>
+                
+                <!-- Cart Items -->
+                <div class="mb-4">
+                    <h6 class="mb-3">Produk</h6>
+                    {% for item in cart.items.all %}
+                    <div class="checkout-item">
+                        <div class="row align-items-center">
+                            <div class="col-3">
+                                {% if item.product.image %}
+                                <img src="{{ item.product.image.url }}" 
+                                     alt="{{ item.product.name }}" 
+                                     class="img-fluid item-img">
+                                {% else %}
+                                <div class="item-img bg-light d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-image text-muted"></i>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-6">
+                                <h6 class="mb-1 small">{{ item.product.name|truncatechars:30 }}</h6>
+                                <p class="text-muted small mb-0">
+                                    {{ item.quantity }} × Rp {{ item.product.price|floatformat:0 }}
+                                </p>
+                            </div>
+                            <div class="col-3 text-end">
+                                <span class="fw-bold small">
+                                    Rp {{ item.total_price|floatformat:0 }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Price Summary -->
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Subtotal</span>
+                        <span>Rp {{ cart.total_price|floatformat:0 }}</span>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Biaya Pengiriman</span>
+                        <span>Rp 15,000</span>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Biaya Layanan</span>
+                        <span>Rp 2,000</span>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="h6">Total</span>
+                        <span class="h6 text-primary">
+                            Rp {{ cart.total_price|add:17000|floatformat:0 }}
+                        </span>
+                    </div>
+                    
+                    <small class="text-muted d-block mb-3">
+                        * Harga sudah termasuk PPN
+                    </small>
+                </div>
+                
+                <!-- Checkout Button -->
+                <div class="d-grid gap-2">
+                    <button type="submit" form="checkout-form" 
+                            class="btn btn-success btn-lg">
+                        <i class="fas fa-lock me-2"></i> Buat Pesanan
+                    </button>
+                    
+                    <a href="{% url 'cart_detail' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left me-2"></i> Kembali ke Keranjang
+                    </a>
+                </div>
+                
+                <!-- Security & Info -->
+                <div class="mt-4">
+                    <div class="alert alert-light border" role="alert">
+                        <h6 class="alert-heading">
+                            <i class="fas fa-shield-alt text-success me-2"></i>
+                            Transaksi Aman
+                        </h6>
+                        <p class="small mb-0">
+                            Data Anda dilindungi dengan enkripsi SSL 256-bit.
+                        </p>
+                    </div>
+                    
+                    <div class="text-center mt-3">
+                        <p class="small text-muted mb-2">
+                            Butuh bantuan? 
+                            <a href="#" class="text-decoration-none">Hubungi Customer Service</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Payment method selection
+    document.addEventListener('DOMContentLoaded', function() {
+        // Payment method selection
+        document.querySelectorAll('.payment-method').forEach(method => {
+            method.addEventListener('click', function() {
+                // Remove selected class from all
+                document.querySelectorAll('.payment-method').forEach(m => {
+                    m.classList.remove('selected');
+                });
+                
+                // Add selected class to clicked
+                this.classList.add('selected');
+                
+                // Check the radio button
+                const radio = this.querySelector('input[type="radio"]');
+                if (radio) {
+                    radio.checked = true;
+                }
+                
+                // Update COD fee if selected
+                updateTotalPrice();
+            });
+        });
+        
+        // Update total price based on payment method
+        function updateTotalPrice() {
+            const codRadio = document.getElementById('cod');
+            const subtotal = {{ cart.total_price }};
+            let shipping = 15000;
+            let serviceFee = 2000;
+            let codFee = 0;
+            
+            if (codRadio && codRadio.checked) {
+                codFee = 5000;
+            }
+            
+            const total = subtotal + shipping + serviceFee + codFee;
+            
+            // Update display (optional)
+            // document.querySelector('.total-price').textContent = 
+            //     'Rp ' + total.toLocaleString('id-ID');
+        }
+        
+        // Form validation
+        document.getElementById('checkout-form').addEventListener('submit', function(e) {
+            const address = document.getElementById('shipping_address').value.trim();
+            const city = document.getElementById('city').value.trim();
+            const postalCode = document.getElementById('postal_code').value.trim();
+            
+            if (!address || !city || !postalCode) {
+                e.preventDefault();
+                showAlert('Harap isi semua informasi pengiriman!', 'warning');
+            }
+        });
+        
+        function showAlert(message, type = 'info') {
+            // Remove existing alerts
+            document.querySelectorAll('.alert-dismissible').forEach(alert => {
+                alert.remove();
+            });
+            
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+            alert.style.top = '20px';
+            alert.style.right = '20px';
+            alert.style.zIndex = '9999';
+            alert.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            document.body.appendChild(alert);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.remove();
+                }
+            }, 5000);
+        }
+        
+        // Auto-fill city and postal code based on address (simplified)
+        document.getElementById('shipping_address').addEventListener('blur', function() {
+            const address = this.value.toLowerCase();
+            const cityField = document.getElementById('city');
+            const postalField = document.getElementById('postal_code');
+            
+            // Simple auto-fill logic (can be improved with API)
+            if (address.includes('bandung')) {
+                cityField.value = 'Bandung';
+                postalField.value = '40100';
+            } else if (address.includes('jakarta')) {
+                cityField.value = 'Jakarta';
+                postalField.value = '10110';
+            } else if (address.includes('surabaya')) {
+                cityField.value = 'Surabaya';
+                postalField.value = '60100';
+            }
+        });
+    });
+</script>
+{% endblock %}

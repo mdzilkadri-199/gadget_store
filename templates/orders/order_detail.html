@@ -1,0 +1,213 @@
+{% extends 'base.html' %}
+
+{% block title %}Detail Pesanan #{{ order.order_number }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="alert alert-{% if order.status == 'COMPLETED' %}success
+                          {% elif order.status == 'PENDING' %}warning
+                          {% elif order.status == 'SHIPPED' %}info
+                          {% elif order.status == 'PAID' %}primary
+                          {% else %}secondary{% endif %} mb-4 shadow-sm">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h4 class="alert-heading mb-0">
+                    Pesanan #{{ order.order_number }}
+                </h4>
+                <p class="mb-0">
+                    Status: <strong>{{ order.get_status_display }}</strong>
+                </p>
+            </div>
+            <div class="text-end">
+                <p class="mb-0">Tanggal: {{ order.created_at|date:"d F Y" }}</p>
+                <p class="mb-0">Total Tagihan: <strong>Rp {{ order.total_price|floatformat:0 }}</strong></p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-4 shadow-sm border-0">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Daftar Produk yang Dibeli</h5>
+                </div>
+                <div class="card-body">
+                    {% for item in order.items.all %}
+                    <div class="row align-items-center mb-3 pb-3 border-bottom">
+                        <div class="col-md-2">
+                            {% if item.product.image %}
+                            <img src="{{ item.product.image.url }}" 
+                                 alt="{{ item.product.name }}" 
+                                 class="img-fluid rounded shadow-sm" style="height: 80px; width: 80px; object-fit: cover;">
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="mb-1 fw-bold">{{ item.product.name }}</h6>
+                            <small class="text-muted">{{ item.product.category.name }}</small>
+                            <div class="mt-1">
+                                <small class="text-primary">Harga Satuan: Rp {{ item.price|floatformat:0 }}</small>
+                            </div>
+                        </div>
+                        <div class="col-md-2 text-center">
+                            <span class="badge bg-secondary">x{{ item.quantity }}</span>
+                        </div>
+                        <div class="col-md-2 text-end">
+                            <strong class="text-dark">Rp {{ item.total_price|floatformat:0 }}</strong>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            {% if user.is_admin %}
+            <div class="card border-primary mb-4 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-user-shield me-2"></i> Admin Control Panel</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Kelola status pesanan ini secara manual:</p>
+                    {% if order.payment_receipt %}
+                    <div class="mb-3">
+                        <h6 class="fw-bold small">Bukti Pembayaran User:</h6>
+                        <a href="{{ order.payment_receipt.url }}" target="_blank">
+                            <img src="{{ order.payment_receipt.url }}" class="img-thumbnail" style="max-height: 200px;">
+                        </a>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="d-flex flex-wrap gap-2">
+                        {% if order.status == 'PENDING' %}
+                        <form action="{% url 'update_order_status' order.id %}" method="POST">
+                            {% csrf_token %}
+                            <input type="hidden" name="status" value="PAID">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-check-circle me-1"></i> Konfirmasi Sudah Bayar
+                            </button>
+                        </form>
+                        {% endif %}
+
+                        {% if order.status == 'PAID' %}
+                        <form action="{% url 'update_order_status' order.id %}" method="POST">
+                            {% csrf_token %}
+                            <input type="hidden" name="status" value="SHIPPED">
+                            <button type="submit" class="btn btn-info text-white">
+                                <i class="fas fa-truck me-1"></i> Tandai Sudah Dikirim
+                            </button>
+                        </form>
+                        {% endif %}
+
+                        {% if order.status == 'SHIPPED' %}
+                        <form action="{% url 'update_order_status' order.id %}" method="POST">
+                            {% csrf_token %}
+                            <input type="hidden" name="status" value="COMPLETED">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-flag-checkered me-1"></i> Tandai Selesai
+                            </button>
+                        </form>
+                        {% endif %}
+
+                        {% if order.status != 'CANCELLED' and order.status != 'COMPLETED' %}
+                        <form action="{% url 'update_order_status' order.id %}" method="POST">
+                            {% csrf_token %}
+                            <input type="hidden" name="status" value="CANCELLED">
+                            <button type="submit" class="btn btn-outline-danger" onclick="return confirm('Batalkan pesanan ini?')">
+                                <i class="fas fa-ban me-1"></i> Batalkan Pesanan
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Ringkasan Info</h5>
+                </div>
+                <div class="card-body">
+                    <h6 class="fw-bold mb-2">Penerima & Alamat</h6>
+                    <div class="p-3 bg-light rounded mb-4">
+                        <p class="small mb-0" style="white-space: pre-line;">
+                            {{ order.shipping_address }}
+                        </p>
+                    </div>
+
+                    <h6 class="fw-bold mb-2">Metode & Status Bayar</h6>
+                    <div class="mb-4">
+                        <p class="mb-1">Metode: <strong>{{ order.get_payment_method_display }}</strong></p>
+                        <p class="mb-3">
+                            Status: 
+                            <span class="badge bg-{% if order.status == 'PAID' or order.status == 'COMPLETED' or order.status == 'SHIPPED' %}success{% else %}danger{% endif %}">
+                                {% if order.status == 'PAID' or order.status == 'COMPLETED' or order.status == 'SHIPPED' %}
+                                    LUNAS
+                                {% else %}
+                                    BELUM DIBAYAR
+                                {% endif %}
+                            </span>
+                        </p>
+
+                        {% if order.payment_method == 'bank_transfer' and order.status == 'PENDING' %}
+                        <div class="p-3 border border-info rounded bg-light mb-3">
+                            <h6 class="text-info small fw-bold mb-2"><i class="fas fa-university me-1"></i> Transfer ke:</h6>
+                            <div class="bg-white p-2 rounded border mb-3">
+                                <p class="mb-0 fw-bold text-dark small">Bank BCA</p>
+                                <p class="mb-0 fs-6 fw-bold text-primary">1234-567-890</p>
+                                <p class="mb-0 x-small text-muted">a.n. PT Gadget Store</p>
+                            </div>
+
+                            {% if not user.is_admin %}
+                            <hr>
+                            <h6 class="small fw-bold mb-2">Upload Bukti Transfer:</h6>
+                            <form action="{% url 'upload_payment_receipt' order.id %}" method="POST" enctype="multipart/form-data">
+                                {% csrf_token %}
+                                <div class="mb-2">
+                                    <input type="file" name="receipt" class="form-control form-control-sm" accept="image/*" required>
+                                </div>
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-upload me-1"></i> Kirim Bukti Bayar
+                                    </button>
+                                </div>
+                            </form>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+
+                        {% if order.payment_receipt and not user.is_admin %}
+                        <div class="mt-2">
+                            <h6 class="small fw-bold mb-1 text-muted">Bukti Anda:</h6>
+                            <img src="{{ order.payment_receipt.url }}" class="img-thumbnail" style="max-height: 100px;">
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="d-grid gap-2">
+                        {% if user.is_admin %}
+                        <a href="{% url 'dashboard_admin' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i> Kembali ke Dashboard Admin
+                        </a>
+                        {% else %}
+                        <a href="{% url 'order_list' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-history me-2"></i> Lihat Riwayat Pesanan
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

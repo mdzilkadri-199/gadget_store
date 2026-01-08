@@ -1,0 +1,357 @@
+<!-- templates/cart/cart_detail.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Keranjang Belanja - GadgetStore{% endblock %}
+
+{% block extra_css %}
+<style>
+    .cart-item {
+        border-bottom: 1px solid #eee;
+        padding: 20px 0;
+    }
+    .cart-item:last-child {
+        border-bottom: none;
+    }
+    .product-img {
+        width: 100px;
+        height: 100px;
+        object-fit: cover;
+        border-radius: 8px;
+    }
+    .quantity-control {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .quantity-btn {
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #ddd;
+        background: white;
+    }
+    .quantity-input {
+        width: 60px;
+        text-align: center;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        padding: 5px;
+    }
+    .empty-cart {
+        text-align: center;
+        padding: 50px 20px;
+    }
+    .summary-card {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 25px;
+        position: sticky;
+        top: 20px;
+    }
+    .product-title {
+        font-weight: 600;
+        color: #333;
+        text-decoration: none;
+    }
+    .product-title:hover {
+        color: #007bff;
+    }
+    .stock-badge {
+        font-size: 0.8rem;
+        padding: 3px 8px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3 mb-0">Keranjang Belanja</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+                    <li class="breadcrumb-item active">Keranjang</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    {% if cart.items.all %}
+    <div class="row">
+        <!-- Cart Items -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Produk dalam Keranjang</h5>
+                </div>
+                <div class="card-body">
+                    {% for item in cart.items.all %}
+                    <div class="cart-item">
+                        <div class="row align-items-center">
+                            <!-- Product Image -->
+                            <div class="col-md-2 col-4">
+                                <a href="{{ item.product.get_absolute_url }}">
+                                    {% if item.product.image %}
+                                    <img src="{{ item.product.image.url }}" 
+                                         alt="{{ item.product.name }}" 
+                                         class="img-fluid product-img">
+                                    {% else %}
+                                    <div class="product-img bg-light d-flex align-items-center justify-content-center">
+                                        <i class="fas fa-image text-muted fa-2x"></i>
+                                    </div>
+                                    {% endif %}
+                                </a>
+                            </div>
+                            
+                            <!-- Product Info -->
+                            <div class="col-md-4 col-8">
+                                <a href="{{ item.product.get_absolute_url }}" class="product-title">
+                                    <h6 class="mb-1">{{ item.product.name }}</h6>
+                                </a>
+                                <p class="text-muted small mb-1">{{ item.product.category.name }}</p>
+                                <p class="mb-0">
+                                    <span class="text-primary fw-bold">Rp {{ item.product.price|floatformat:0 }}</span>
+                                </p>
+                                {% if item.product.stock < 10 %}
+                                <span class="badge bg-warning stock-badge">
+                                    Stok: {{ item.product.stock }}
+                                </span>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Quantity Control -->
+                            <div class="col-md-4 col-8">
+                                <div class="quantity-control">
+                                    <form method="post" action="{% url 'update_cart_item' item.id %}" 
+                                          class="d-flex align-items-center" id="form-{{ item.id }}">
+                                        {% csrf_token %}
+                                        <button type="button" class="quantity-btn decrement-btn" 
+                                                data-item-id="{{ item.id }}">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                        <input type="number" name="quantity" 
+                                               value="{{ item.quantity }}" 
+                                               min="1" max="{{ item.product.stock }}"
+                                               class="quantity-input" 
+                                               data-item-id="{{ item.id }}">
+                                        <button type="button" class="quantity-btn increment-btn" 
+                                                data-item-id="{{ item.id }}">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                                <small class="text-muted d-block mt-2">
+                                    Stok tersedia: {{ item.product.stock }}
+                                </small>
+                            </div>
+                            
+                            <!-- Price and Actions -->
+                            <div class="col-md-2 col-4 text-end">
+                                <h6 class="text-primary mb-2">Rp {{ item.total_price|floatformat:0 }}</h6>
+                                <form method="post" action="{% url 'remove_from_cart' item.id %}" 
+                                      class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" 
+                                            onclick="return confirm('Hapus produk dari keranjang?')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Continue Shopping -->
+            <div class="mt-4">
+                <a href="{% url 'product_list' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left me-2"></i> Lanjutkan Belanja
+                </a>
+            </div>
+        </div>
+        
+        <!-- Order Summary -->
+        <div class="col-lg-4">
+            <div class="summary-card">
+                <h5 class="mb-4">Ringkasan Pesanan</h5>
+                
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Total Harga ({{ cart.total_items }} items)</span>
+                        <span class="fw-bold">Rp {{ cart.total_price|floatformat:0 }}</span>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Biaya Pengiriman</span>
+                        <span class="fw-bold">Rp 15,000</span>
+                    </div>
+                    
+                    {% comment %} <div class="d-flex justify-content-between mb-3">
+                        <span class="text-muted">Diskon</span>
+                        <span class="fw-bold text-success">- Rp 0</span>
+                    </div> {% endcomment %}
+                    
+                    <hr>
+                    
+                    <div class="d-flex justify-content-between mb-4">
+                        <span class="h5">Total Pembayaran</span>
+                        <span class="h5 text-primary">Rp {{ cart.total_price|add:15000|floatformat:0 }}</span>
+                    </div>
+                </div>
+                
+                <!-- Checkout Button -->
+                <div class="d-grid gap-2">
+                    <a href="{% url 'checkout' %}" class="btn btn-success btn-lg">
+                        <i class="fas fa-shopping-bag me-2"></i> Lanjut ke Checkout
+                    </a>
+                </div>
+                
+                <!-- Security Info -->
+                <div class="mt-4 text-center">
+                    <p class="small text-muted mb-2">
+                        <i class="fas fa-lock me-1"></i>
+                        Transaksi aman dan terenkripsi
+                    </p>
+                    <div class="d-flex justify-content-center gap-3">
+                        <i class="fab fa-cc-visa fa-2x text-primary"></i>
+                        <i class="fab fa-cc-mastercard fa-2x text-danger"></i>
+                        <i class="fab fa-cc-paypal fa-2x text-info"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {% else %}
+    <!-- Empty Cart -->
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="empty-cart">
+                <div class="mb-4">
+                    <i class="fas fa-shopping-cart fa-5x text-muted"></i>
+                </div>
+                <h3 class="mb-3">Keranjang Belanjamu Kosong</h3>
+                <p class="text-muted mb-4">
+                    Tambahkan produk ke keranjang untuk mulai berbelanja
+                </p>
+                <div class="d-grid gap-2 col-md-6 mx-auto">
+                    <a href="{% url 'product_list' %}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-shopping-bag me-2"></i> Mulai Belanja
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Quantity update with AJAX
+    document.addEventListener('DOMContentLoaded', function() {
+        // Increment button
+        document.querySelectorAll('.increment-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const itemId = this.dataset.itemId;
+                const input = document.querySelector(`input[data-item-id="${itemId}"]`);
+                const max = parseInt(input.getAttribute('max'));
+                
+                if (parseInt(input.value) < max) {
+                    input.value = parseInt(input.value) + 1;
+                    updateCartItem(itemId, input.value);
+                } else {
+                    showAlert('Jumlah melebihi stok tersedia!', 'warning');
+                }
+            });
+        });
+        
+        // Decrement button
+        document.querySelectorAll('.decrement-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const itemId = this.dataset.itemId;
+                const input = document.querySelector(`input[data-item-id="${itemId}"]`);
+                
+                if (parseInt(input.value) > 1) {
+                    input.value = parseInt(input.value) - 1;
+                    updateCartItem(itemId, input.value);
+                }
+            });
+        });
+        
+        // Input change
+        document.querySelectorAll('.quantity-input').forEach(input => {
+            input.addEventListener('change', function() {
+                const itemId = this.dataset.itemId;
+                const max = parseInt(this.getAttribute('max'));
+                const min = parseInt(this.getAttribute('min'));
+                let value = parseInt(this.value);
+                
+                if (value > max) {
+                    value = max;
+                    this.value = max;
+                    showAlert('Jumlah melebihi stok tersedia!', 'warning');
+                } else if (value < min) {
+                    value = min;
+                    this.value = min;
+                }
+                
+                updateCartItem(itemId, value);
+            });
+        });
+        
+        function updateCartItem(itemId, quantity) {
+            const form = document.getElementById(`form-${itemId}`);
+            const formData = new FormData(form);
+            formData.set('quantity', quantity);
+            
+            fetch(`/cart/update/${itemId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                },
+                body: formData
+            })
+            .then(response => {
+                if (response.ok) {
+                    // Reload page to update totals
+                    window.location.reload();
+                }
+            });
+        }
+        
+        function showAlert(message, type = 'info') {
+            // Remove existing alerts
+            document.querySelectorAll('.alert-dismissible').forEach(alert => {
+                alert.remove();
+            });
+            
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+            alert.style.top = '20px';
+            alert.style.right = '20px';
+            alert.style.zIndex = '9999';
+            alert.style.minWidth = '300px';
+            alert.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            document.body.appendChild(alert);
+            
+            // Auto remove after 3 seconds
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.remove();
+                }
+            }, 3000);
+        }
+    });
+</script>
+{% endblock %}

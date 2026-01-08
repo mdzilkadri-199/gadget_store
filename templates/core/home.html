@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="hero-section bg-primary text-white rounded-3 p-5 mb-5">
+    <div class="row align-items-center">
+        <div class="col-md-6">
+            <h1 class="display-4 fw-bold">Temukan Gadget Impianmu</h1>
+            <p class="lead">Smartphone, Tablet, Laptop, dan Aksesoris Terlengkap dengan Harga Terbaik</p>
+            <a href="{% url 'product_list' %}" class="btn btn-light btn-lg">
+                Belanja Sekarang <i class="fas fa-arrow-right ms-2"></i>
+            </a>
+        </div>
+        <div class="col-md-6 text-center">
+            <img src="https://via.placeholder.com/400x300" alt="Gadget" class="img-fluid rounded shadow">
+        </div>
+    </div>
+</div>
+
+<h2 class="mb-4">Kategori Produk</h2>
+<div class="row mb-5">
+    {% for category in categories %}
+    <div class="col-md-3 col-6 mb-3">
+        <a href="{% url 'product_list_by_category' category.slug %}" 
+           class="text-decoration-none">    
+            <div class="card h-100 border-0 shadow-sm hover-shadow transition-all">
+                <div class="card-body text-center p-4">
+                    <i class="fas {{ category.icon_class|default:'fa-box' }} fa-3x text-primary mb-3"></i>
+                    <h5 class="card-title text-dark fw-bold">{{ category.name }}</h5>
+                </div>
+            </div>
+        </a>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Produk Terlaris</h2>
+    <a href="{% url 'product_list' %}" class="btn btn-outline-primary">
+        Lihat Semua <i class="fas fa-arrow-right ms-1"></i>
+    </a>
+</div>
+
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4 mb-5">
+    {% for product in featured_products %}
+    <div class="col">
+        <div class="card product-card h-100 border-0 shadow-sm">
+            {% if product.image %}
+            <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}" 
+                 style="height: 200px; object-fit: cover;">
+            {% else %}
+            <div class="card-img-top bg-light d-flex align-items-center justify-content-center" 
+                 style="height: 200px;">
+                <i class="fas fa-image fa-3x text-muted"></i>
+            </div>
+            {% endif %}
+            <div class="card-body">
+                <h5 class="card-title h6 fw-bold">{{ product.name|truncatechars:30 }}</h5>
+                <p class="card-text text-muted small">{{ product.description|truncatewords:10 }}</p>
+                <h6 class="text-primary fw-bold mb-3">Rp {{ product.price|floatformat:0 }}</h6>
+                <div class="d-grid gap-2">
+                    <a href="{{ product.get_absolute_url }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-eye me-1"></i> Detail
+                    </a>
+                    {% if user.is_authenticated %}
+                    <button class="btn btn-primary btn-sm add-to-cart" data-product-id="{{ product.id }}">
+                        <i class="fas fa-cart-plus me-1"></i> Tambah
+                    </button>
+                    {% else %}
+                    <a href="{% url 'login' %}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-cart-plus me-1"></i> Tambah
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="alert alert-info">Belum ada produk yang tersedia.</div>
+    </div>
+    {% endfor %}
+</div>
+
+<h2 class="mb-4">Produk Baru</h2>
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
+    {% for product in new_arrivals %}
+    <div class="col">
+        <div class="card h-100 border-0 shadow-sm">
+            <span class="position-absolute top-0 start-0 m-2 badge bg-success shadow-sm">New</span>
+            {% if product.image %}
+            <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}" 
+                 style="height: 180px; object-fit: cover;">
+            {% endif %}
+            <div class="card-body">
+                <h6 class="card-title fw-bold">{{ product.name|truncatechars:25 }}</h6>
+                <p class="card-text text-primary fw-bold">Rp {{ product.price|floatformat:0 }}</p>
+                <a href="{{ product.get_absolute_url }}" class="btn btn-outline-primary btn-sm w-100">
+                    Lihat Detail
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<style>
+    .hover-shadow {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-shadow:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+    }
+</style>
+{% endblock %}

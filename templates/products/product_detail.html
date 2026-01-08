@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>{{ product.name }}</h1>
+<p>{{ product.description }}</p>
+<p>Harga: Rp {{ product.price }}</p>
+<p>Stok: {{ product.stock }}</p>
+
+{% if user.is_authenticated %}
+<form method="post" action="{% url 'add_to_cart' %}">
+    {% csrf_token %}
+    <input type="hidden" name="product_id" value="{{ product.id }}">
+    <input type="number" name="quantity" value="1" min="1" max="{{ product.stock }}">
+    <button type="submit" class="btn btn-primary">Tambah ke Keranjang</button>
+</form>
+{% else %}
+<p>Silakan <a href="{% url 'login' %}">login</a> untuk membeli.</p>
+{% endif %}
+{% endblock %}
